@@ -1,0 +1,112 @@
+### ========== VARIÁVEIS ==========
+@baseUrl = http://localhost:80
+@token = SEU_TOKEN_AQUI
+
+### ========== HEALTH ==========
+
+### Health check
+GET {{baseUrl}}/api/v1/health
+
+### ========== AUTH ==========
+
+### Login
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@autodoc.local",
+  "password": "changeme"
+}
+
+### Meus dados
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{token}}
+
+### ========== DOCUMENTOS ==========
+
+### Upload de PDF (multipart)
+POST {{baseUrl}}/api/v1/documents
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----FormBoundary
+
+------FormBoundary
+Content-Disposition: form-data; name="file"; filename="documento.pdf"
+Content-Type: application/pdf
+
+< ./exemplo.pdf
+------FormBoundary--
+
+### Listar documentos
+GET {{baseUrl}}/api/v1/documents
+Authorization: Bearer {{token}}
+
+### Listar com filtros
+GET {{baseUrl}}/api/v1/documents?status=completed&type=pdf&page=1&page_size=20
+Authorization: Bearer {{token}}
+
+### Buscar documento por ID
+GET {{baseUrl}}/api/v1/documents/DOCUMENT_ID_AQUI
+Authorization: Bearer {{token}}
+
+### Enriquecer com XML
+POST {{baseUrl}}/api/v1/documents/DOCUMENT_ID_AQUI/enrich
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----XmlBoundary
+
+------XmlBoundary
+Content-Disposition: form-data; name="xml"; filename="enriquecimento.xml"
+Content-Type: application/xml
+
+< ./exemplo.xml
+------XmlBoundary--
+
+### ========== RELATÓRIOS ==========
+
+### Sumário geral
+GET {{baseUrl}}/api/v1/reports/summary
+Authorization: Bearer {{token}}
+
+### Sumário por período
+GET {{baseUrl}}/api/v1/reports/summary?from=2024-01-01&to=2024-12-31
+Authorization: Bearer {{token}}
+
+### Listar documentos (relatório)
+GET {{baseUrl}}/api/v1/reports/documents?status=completed&page=1&page_size=50
+Authorization: Bearer {{token}}
+
+### Exportar CSV
+GET {{baseUrl}}/api/v1/reports/export?format=csv
+Authorization: Bearer {{token}}
+
+### ========== USUÁRIOS (admin only) ==========
+
+### Listar usuários
+GET {{baseUrl}}/api/v1/users
+Authorization: Bearer {{token}}
+
+### Criar usuário
+POST {{baseUrl}}/api/v1/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "operador@autodoc.local",
+  "name": "Operador Exemplo",
+  "password": "senha123",
+  "role": "operator"
+}
+
+### Atualizar usuário
+PUT {{baseUrl}}/api/v1/users/USER_ID_AQUI
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Operador Atualizado",
+  "role": "manager",
+  "active": true
+}
+
+### Deletar usuário
+DELETE {{baseUrl}}/api/v1/users/USER_ID_AQUI
+Authorization: Bearer {{token}}
