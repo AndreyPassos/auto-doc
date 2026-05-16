@@ -54,14 +54,15 @@ Um usuário admin é criado automaticamente na primeira inicialização com as c
 | `GET` | `/api/v1/documents` | JWT | Lista documentos com paginação e filtros |
 | `GET` | `/api/v1/documents/:id` | JWT | Retorna detalhes e status de OCR de um documento |
 | `POST` | `/api/v1/documents/:id/enrich` | JWT | Enriquece um documento com metadados via XML |
+| `DELETE` | `/api/v1/documents/:id` | JWT + admin | Remove um documento e seu arquivo armazenado |
 
 ### Relatórios
 
 | Método | Path | Auth | Descrição |
 |---|---|---|---|
-| `GET` | `/api/v1/reports/summary` | JWT | Resumo agregado (total, por status, por classificação) |
-| `GET` | `/api/v1/reports/documents` | JWT | Lista detalhada de documentos para relatório |
-| `GET` | `/api/v1/reports/export` | JWT | Exporta relatório em CSV |
+| `GET` | `/api/v1/reports/summary` | JWT | Resumo agregado: total, por status, por tipo, por dia/semana/mês |
+| `GET` | `/api/v1/reports/documents` | JWT | Lista detalhada com filtros por período, status e XML |
+| `GET` | `/api/v1/reports/export` | JWT | Exporta relatório em CSV (`?format=csv`) |
 
 ### Usuários (somente admin)
 
@@ -69,8 +70,14 @@ Um usuário admin é criado automaticamente na primeira inicialização com as c
 |---|---|---|---|
 | `GET` | `/api/v1/users` | JWT + admin | Lista todos os usuários |
 | `POST` | `/api/v1/users` | JWT + admin | Cria novo usuário |
-| `PUT` | `/api/v1/users/:id` | JWT + admin | Atualiza usuário |
+| `PUT` | `/api/v1/users/:id` | JWT + admin | Atualiza nome, perfil e status do usuário |
 | `DELETE` | `/api/v1/users/:id` | JWT + admin | Remove usuário |
+
+### Auditoria (somente admin)
+
+| Método | Path | Auth | Descrição |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/logs` | JWT + admin | Lista logs de auditoria com filtro por tipo de evento |
 
 ### Health
 
