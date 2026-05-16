@@ -43,8 +43,8 @@ export interface PaginatedResponse<T> {
   page_size: number
 }
 
-export interface DayCount {
-  date: string
+export interface PeriodCount {
+  period: string
   count: number
 }
 
@@ -52,7 +52,9 @@ export interface SummaryReport {
   total: number
   by_status: Record<string, number>
   by_type: Record<string, number>
-  by_day: DayCount[]
+  by_day: PeriodCount[]
+  by_week: PeriodCount[]
+  by_month: PeriodCount[]
 }
 
 export interface LoginResponse {

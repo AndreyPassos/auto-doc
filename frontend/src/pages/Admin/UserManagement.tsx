@@ -167,7 +167,7 @@ export default function UserManagement() {
       )}
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         {isLoading ? (
           <div className="space-y-3 p-6">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -181,6 +181,7 @@ export default function UserManagement() {
         ) : !users || users.length === 0 ? (
           <div className="px-6 py-10 text-center text-sm text-gray-500">Nenhum usuário encontrado.</div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-100">
             <thead>
               <tr className="bg-gray-50">
@@ -287,6 +288,7 @@ export default function UserManagement() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

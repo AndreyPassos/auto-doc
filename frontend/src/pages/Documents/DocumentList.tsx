@@ -177,7 +177,7 @@ export default function DocumentList() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         {isLoading ? (
           <div className="space-y-3 p-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -191,75 +191,77 @@ export default function DocumentList() {
         ) : !data || data.data.length === 0 ? (
           <EmptyState hasFilters={hasFilters} />
         ) : (
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Arquivo</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Tamanho</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Criado em</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50 bg-white">
-              {data.data.map((doc: Document) => (
-                <tr
-                  key={doc.id}
-                  onClick={() => navigate(`/documents/${doc.id}`)}
-                  className="cursor-pointer transition-colors hover:bg-blue-50/40"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className={`inline-flex h-6 w-10 shrink-0 items-center justify-center rounded text-xs font-bold ${doc.file_type === 'pdf' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700'}`}>
-                        {doc.file_type.toUpperCase()}
-                      </span>
-                      <span className="max-w-xs truncate text-sm font-medium text-gray-900">
-                        {doc.original_filename}
-                      </span>
-                      {doc.xml_enriched && (
-                        <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">XML</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3"><StatusBadge status={doc.status} /></td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{formatSize(doc.file_size)}</td>
-                  <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-500">{formatDate(doc.created_at)}</td>
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    {isAdmin && (
-                      confirmDeleteId === doc.id ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-gray-500">Confirmar?</span>
-                          <button
-                            onClick={() => deleteMutation.mutate(doc.id)}
-                            disabled={deleteMutation.isPending}
-                            className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-60"
-                          >
-                            Sim
-                          </button>
-                          <button
-                            onClick={() => setConfirmDeleteId(null)}
-                            className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                          >
-                            Não
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmDeleteId(doc.id)}
-                          className="rounded p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-500"
-                          title="Excluir"
-                        >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                          </svg>
-                        </button>
-                      )
-                    )}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-100">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Arquivo</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                  <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 sm:table-cell">Tamanho</th>
+                  <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 md:table-cell">Criado em</th>
+                  <th className="px-4 py-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50 bg-white">
+                {data.data.map((doc: Document) => (
+                  <tr
+                    key={doc.id}
+                    onClick={() => navigate(`/documents/${doc.id}`)}
+                    className="cursor-pointer transition-colors hover:bg-blue-50/40"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`inline-flex h-6 w-10 shrink-0 items-center justify-center rounded text-xs font-bold ${doc.file_type === 'pdf' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700'}`}>
+                          {doc.file_type.toUpperCase()}
+                        </span>
+                        <span className="max-w-[140px] truncate text-sm font-medium text-gray-900 sm:max-w-xs">
+                          {doc.original_filename}
+                        </span>
+                        {doc.xml_enriched && (
+                          <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">XML</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3"><StatusBadge status={doc.status} /></td>
+                    <td className="hidden px-4 py-3 text-sm text-gray-500 sm:table-cell">{formatSize(doc.file_size)}</td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 text-sm text-gray-500 md:table-cell">{formatDate(doc.created_at)}</td>
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      {isAdmin && (
+                        confirmDeleteId === doc.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-500">Confirmar?</span>
+                            <button
+                              onClick={() => deleteMutation.mutate(doc.id)}
+                              disabled={deleteMutation.isPending}
+                              className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-60"
+                            >
+                              Sim
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                            >
+                              Não
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(doc.id)}
+                            className="rounded p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-500"
+                            title="Excluir"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                            </svg>
+                          </button>
+                        )
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

@@ -159,7 +159,7 @@ export default function ReportsDashboard() {
           <h2 className="mb-4 text-sm font-semibold text-gray-700">Documentos por Dia</h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={summary.by_day} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
+              <XAxis dataKey="period" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip
                 labelFormatter={(label: string) => formatDate(label)}
@@ -223,41 +223,45 @@ export default function ReportsDashboard() {
           </p>
         ) : (
           <>
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
-                <tr>
-                  {['Arquivo', 'Tipo', 'Status', 'XML', 'Criado em'].map(col => (
-                    <th key={col} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 bg-white">
-                {docsList.data.map((doc: Document) => (
-                  <tr
-                    key={doc.id}
-                    onClick={() => navigate(`/documents/${doc.id}`)}
-                    className="cursor-pointer hover:bg-blue-50/40 transition-colors"
-                  >
-                    <td className="max-w-xs truncate px-4 py-3 text-sm font-medium text-gray-800">
-                      {doc.original_filename}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex h-5 w-9 items-center justify-center rounded text-xs font-bold ${doc.file_type === 'pdf' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700'}`}>
-                        {doc.file_type.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3"><StatusBadge status={doc.status} /></td>
-                    <td className="px-4 py-3">
-                      {doc.xml_enriched
-                        ? <span className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Sim</span>
-                        : <span className="text-xs text-gray-400">—</span>
-                      }
-                    </td>
-                    <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-500">{formatDate(doc.created_at)}</td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-100">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Arquivo</th>
+                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 sm:table-cell">Tipo</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 sm:table-cell">XML</th>
+                    <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 md:table-cell">Criado em</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50 bg-white">
+                  {docsList.data.map((doc: Document) => (
+                    <tr
+                      key={doc.id}
+                      onClick={() => navigate(`/documents/${doc.id}`)}
+                      className="cursor-pointer transition-colors hover:bg-blue-50/40"
+                    >
+                      <td className="max-w-[140px] truncate px-4 py-3 text-sm font-medium text-gray-800 sm:max-w-xs">
+                        {doc.original_filename}
+                      </td>
+                      <td className="hidden px-4 py-3 sm:table-cell">
+                        <span className={`inline-flex h-5 w-9 items-center justify-center rounded text-xs font-bold ${doc.file_type === 'pdf' ? 'bg-red-100 text-red-700' : 'bg-sky-100 text-sky-700'}`}>
+                          {doc.file_type.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3"><StatusBadge status={doc.status} /></td>
+                      <td className="hidden px-4 py-3 sm:table-cell">
+                        {doc.xml_enriched
+                          ? <span className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">Sim</span>
+                          : <span className="text-xs text-gray-400">—</span>
+                        }
+                      </td>
+                      <td className="hidden whitespace-nowrap px-4 py-3 text-sm text-gray-500 md:table-cell">{formatDate(doc.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {totalDocPages > 1 && (
               <div className="flex items-center justify-between border-t border-gray-100 px-6 py-3 text-sm text-gray-500">

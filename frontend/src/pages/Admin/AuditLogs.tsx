@@ -100,7 +100,7 @@ export default function AuditLogs() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         {isLoading ? (
           <div className="space-y-3 p-6">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -113,14 +113,15 @@ export default function AuditLogs() {
           </p>
         ) : (
           <>
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Data / Hora', 'Evento', 'Usuário', 'Detalhes', 'IP'].map(col => (
-                    <th key={col} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                      {col}
-                    </th>
-                  ))}
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Data / Hora</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Evento</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Usuário</th>
+                  <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 md:table-cell">Detalhes</th>
+                  <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 lg:table-cell">IP</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 bg-white">
@@ -142,16 +143,17 @@ export default function AuditLogs() {
                         <span className="text-xs text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="hidden px-4 py-3 md:table-cell">
                       <DetailsCell details={entry.details ?? {}} />
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-400">
+                    <td className="hidden whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-400 lg:table-cell">
                       {entry.ip_address ?? '—'}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between border-t border-gray-100 px-6 py-3 text-sm text-gray-500">
