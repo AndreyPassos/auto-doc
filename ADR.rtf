@@ -26,4 +26,20 @@ Infraestrutura:\
 Docker\
 \
 GAPS:\
-}
+1. 3 bancos diferentes (MongoDB + PostgreSQL + MySQL)\
+Complexidade desnecess\'e1ria; join entre bancos \'e9 feito na aplica\'e7\'e3o (anti-pattern).\
+\
+2. MySQL para dados XML com "join via aplica\'e7\'e3o"\
+Anti-pattern grave \'97 joins devem ocorrer no banco, n\'e3o no c\'f3digo.\
+\
+3. Elasticsearch "obrigat\'f3rio"\
+Para 5.000 docs/dia, o full-text do PostgreSQL (tsvector) \'e9 suficiente e elimina um cluster de 3 n\'f3s.\
+\
+4. Local Filesystem sem backup e sem expira\'e7\'e3o\
+Dados sem backup e sem pol\'edtica de reten\'e7\'e3o definida \'e9 risco operacional.\
+\
+5. Kubernetes + Docker Compose no mesmo diagrama\
+Contradi\'e7\'e3o: Kubernetes e Docker Compose s\'e3o abordagens exclusivas para o mesmo problema.\
+\
+6. Processing "S\'edncrono"\
+OCR pode levar at\'e9 30s por arquivo; processamento s\'edncrono segura a conex\'e3o HTTP e piora a UX.}
