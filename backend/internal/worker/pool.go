@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/keltech/auto-doc/internal/document"
@@ -59,7 +60,7 @@ func (p *Pool) worker() {
 		text, err := extractText(job)
 		if err != nil {
 			log.Error().Err(err).Str("doc_id", job.DocumentID).Msg("extraction failed")
-			_ = p.repo.UpdateFailed(job.DocumentID, err.Error())
+			_ = p.repo.UpdateFailed(job.DocumentID, friendlyExtractionError(err))
 			continue
 		}
 
@@ -73,7 +74,7 @@ func (p *Pool) worker() {
 
 		if err := p.repo.UpdateProcessed(job.DocumentID, text, docPatterns); err != nil {
 			log.Error().Err(err).Str("doc_id", job.DocumentID).Msg("failed to save results")
-			_ = p.repo.UpdateFailed(job.DocumentID, "failed to persist results")
+			_ = p.repo.UpdateFailed(job.DocumentID, "Erro ao salvar os resultados. Tente enviar o arquivo novamente.")
 			continue
 		}
 
@@ -104,5 +105,26 @@ func extractText(job Job) (string, error) {
 		return ocr.ProcessImage(job.FilePath)
 	default:
 		return "", fmt.Errorf("unsupported file type: %s", job.FileType)
+	}
+}
+
+// friendlyExtractionError translates a low-level OCR error into a message
+// suitable for display to the end user. The original error is always logged
+// separately so technical details remain available for debugging.
+func friendlyExtractionError(err error) string {
+	msg := err.Error()
+	switch {
+	case strings.HasPrefix(msg, "pdftotext:"):
+		return "Não foi possível extrair o texto do PDF. " +
+			"O arquivo pode estar corrompido, protegido por senha ou não conter uma camada de texto legível."
+	case strings.HasPrefix(msg, "tesseract:"):
+		return "Falha no reconhecimento de texto (OCR). " +
+			"Verifique se a imagem está nítida, com boa iluminação e resolução mínima de 150 DPI."
+	case strings.HasPrefix(msg, "reading tesseract output:"):
+		return "Erro interno ao ler o resultado do OCR. Tente enviar o arquivo novamente."
+	case strings.HasPrefix(msg, "unsupported file type:"):
+		return "Tipo de arquivo não suportado pelo processador. Envie um PDF ou PNG."
+	default:
+		return "Falha inesperada durante o processamento. Tente enviar o arquivo novamente."
 	}
 }

@@ -130,9 +130,18 @@ export default function DocumentDetail() {
 
       {/* Failed */}
       {doc.status === 'failed' && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4">
-          <p className="text-sm font-semibold text-red-800">Falha no processamento</p>
-          {doc.error_message && <p className="mt-1 text-xs text-red-600">{doc.error_message}</p>}
+        <div className="flex gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
+          <svg className="mt-0.5 h-5 w-5 shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-red-800">
+              {doc.error_message ?? 'Falha no processamento do documento.'}
+            </p>
+            <p className="mt-1 text-xs text-red-500">
+              Corrija o arquivo e faça um novo upload, ou entre em contato com o suporte.
+            </p>
+          </div>
         </div>
       )}
 
