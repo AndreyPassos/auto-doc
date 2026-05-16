@@ -1,0 +1,42 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+
+# Go
+backend/vendor/
+backend/*.exe
+backend/*.out
+backend/tmp/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.production
+
+# Uploads (runtime data, never version)
+uploads/
+
+# Logs
+*.log
+
+# Docker volumes (local dev)
+postgres-data/
+
+# OS
+Thumbs.db
+ehthumbs.db

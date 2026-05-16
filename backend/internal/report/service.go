@@ -57,12 +57,36 @@ func NewService(db *sqlx.DB) *Service {
 	return &Service{db: db}
 }
 
-// Summary returns aggregate document statistics. When from/to are nil the
-// by_day series covers the last 30 days; otherwise it covers the given range.
+// Summary returns aggregate document statistics scoped to the given date range.
+// All counts (total, by_status, by_type, by_day) reflect the same window.
+// When from/to are nil, by_day defaults to the last 30 days.
 func (s *Service) Summary(from, to *time.Time) (*SummaryReport, error) {
+	// Build shared WHERE clause and args used by all sub-queries.
+	filterArgs := []interface{}{}
+	baseWhere := "WHERE 1=1"
+	i := 1
+	if from != nil {
+		baseWhere += fmt.Sprintf(" AND created_at >= $%d", i)
+		filterArgs = append(filterArgs, from)
+		i++
+	}
+	if to != nil {
+		baseWhere += fmt.Sprintf(" AND created_at <= $%d", i)
+		filterArgs = append(filterArgs, to)
+		i++
+	}
+	// When no range is given, scope by_day (and counts) to last 30 days.
+	if from == nil && to == nil {
+		baseWhere += " AND created_at >= NOW() - INTERVAL '30 days'"
+	}
+	_ = i
+
 	// --- total count ---
 	var total int
-	if err := s.db.QueryRow(`SELECT COUNT(*) FROM documents`).Scan(&total); err != nil {
+	if err := s.db.QueryRow(
+		fmt.Sprintf(`SELECT COUNT(*) FROM documents %s`, baseWhere),
+		filterArgs...,
+	).Scan(&total); err != nil {
 		return nil, fmt.Errorf("summary total: %w", err)
 	}
 
@@ -72,7 +96,10 @@ func (s *Service) Summary(from, to *time.Time) (*SummaryReport, error) {
 		Value int    `db:"cnt"`
 	}
 	var statusRows []kv
-	if err := s.db.Select(&statusRows, `SELECT status, COUNT(*) AS cnt FROM documents GROUP BY status`); err != nil {
+	if err := s.db.Select(&statusRows,
+		fmt.Sprintf(`SELECT status, COUNT(*) AS cnt FROM documents %s GROUP BY status`, baseWhere),
+		filterArgs...,
+	); err != nil {
 		return nil, fmt.Errorf("summary by_status: %w", err)
 	}
 	byStatus := make(map[string]int, len(statusRows))
@@ -85,7 +112,10 @@ func (s *Service) Summary(from, to *time.Time) (*SummaryReport, error) {
 		Key   string `db:"file_type"`
 		Value int    `db:"cnt"`
 	}
-	if err := s.db.Select(&typeRows, `SELECT file_type, COUNT(*) AS cnt FROM documents GROUP BY file_type`); err != nil {
+	if err := s.db.Select(&typeRows,
+		fmt.Sprintf(`SELECT file_type, COUNT(*) AS cnt FROM documents %s GROUP BY file_type`, baseWhere),
+		filterArgs...,
+	); err != nil {
 		return nil, fmt.Errorf("summary by_type: %w", err)
 	}
 	byType := make(map[string]int, len(typeRows))
@@ -93,39 +123,16 @@ func (s *Service) Summary(from, to *time.Time) (*SummaryReport, error) {
 		byType[r.Key] = r.Value
 	}
 
-	// --- by_day ---
-	args := []interface{}{}
-	var dateFilter string
-	i := 1
-	if from != nil {
-		dateFilter += fmt.Sprintf(" AND created_at >= $%d", i)
-		args = append(args, from)
-		i++
-	}
-	if to != nil {
-		dateFilter += fmt.Sprintf(" AND created_at <= $%d", i)
-		args = append(args, to)
-		i++
-	}
-
-	// When no range provided default to last 30 days.
-	var rangeFilter string
-	if from == nil && to == nil {
-		rangeFilter = "WHERE created_at >= NOW() - INTERVAL '30 days'"
-	} else {
-		rangeFilter = "WHERE 1=1" + dateFilter
-	}
-
+	// --- by_day (same window as above) ---
 	byDayQuery := fmt.Sprintf(`
 		SELECT TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day,
 		       COUNT(*) AS count
-		FROM documents
-		%s
+		FROM documents %s
 		GROUP BY day
-		ORDER BY day ASC`, rangeFilter)
+		ORDER BY day ASC`, baseWhere)
 
 	var byDay []DayCount
-	if err := s.db.Select(&byDay, byDayQuery, args...); err != nil {
+	if err := s.db.Select(&byDay, byDayQuery, filterArgs...); err != nil {
 		return nil, fmt.Errorf("summary by_day: %w", err)
 	}
 	if byDay == nil {
@@ -232,7 +239,10 @@ func (s *Service) ExportCSV(from, to *time.Time, status string) ([]byte, error) 
 	if to != nil {
 		conds = append(conds, fmt.Sprintf("created_at <= $%d", i))
 		args = append(args, to)
+		i++
 	}
+
+	_ = i // consumed; kept for pattern consistency
 
 	where := ""
 	if len(conds) > 0 {

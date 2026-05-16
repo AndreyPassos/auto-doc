@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sync"
 
 	"github.com/keltech/auto-doc/internal/document"
 	"github.com/keltech/auto-doc/internal/ocr"
@@ -19,6 +20,7 @@ type Job struct {
 type Pool struct {
 	jobs chan Job
 	repo *document.Repository
+	wg   sync.WaitGroup
 }
 
 func NewPool(size int, repo *document.Repository) *Pool {
@@ -27,6 +29,7 @@ func NewPool(size int, repo *document.Repository) *Pool {
 		repo: repo,
 	}
 	for i := 0; i < size; i++ {
+		p.wg.Add(1)
 		go p.worker()
 	}
 	return p
@@ -43,6 +46,7 @@ func (p *Pool) SubmitDoc(docID, filePath string, fileType document.FileType) {
 }
 
 func (p *Pool) worker() {
+	defer p.wg.Done()
 	log := logger.Get()
 	for job := range p.jobs {
 		log.Info().Str("doc_id", job.DocumentID).Str("file", filepath.Base(job.FilePath)).Msg("processing started")
@@ -77,8 +81,19 @@ func (p *Pool) worker() {
 	}
 }
 
+// Shutdown stops accepting new jobs, waits for in-flight jobs to finish (or
+// until ctx is cancelled), then returns.
 func (p *Pool) Shutdown(ctx context.Context) {
 	close(p.jobs)
+	done := make(chan struct{})
+	go func() {
+		p.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-ctx.Done():
+	}
 }
 
 func extractText(job Job) (string, error) {
@@ -91,4 +106,3 @@ func extractText(job Job) (string, error) {
 		return "", fmt.Errorf("unsupported file type: %s", job.FileType)
 	}
 }
-

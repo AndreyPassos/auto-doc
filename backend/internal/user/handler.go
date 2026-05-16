@@ -1,0 +1,131 @@
+package user
+
+import (
+	"errors"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/keltech/auto-doc/pkg/apierr"
+	"github.com/keltech/auto-doc/pkg/logger"
+)
+
+// Handler exposes user management endpoints over HTTP via Gin.
+// All routes must be protected by admin-only middleware at the router level.
+type Handler struct {
+	repo *Repository
+}
+
+// NewHandler creates a new Handler backed by the given repository.
+func NewHandler(repo *Repository) *Handler {
+	return &Handler{repo: repo}
+}
+
+// List handles GET /users — returns the full list of users.
+func (h *Handler) List(c *gin.Context) {
+	users, err := h.repo.List()
+	if err != nil {
+		logger.Get().Error().Err(err).Msg("user list failed")
+		apierr.Abort(c, apierr.Internal())
+		return
+	}
+	if users == nil {
+		users = []User{}
+	}
+	c.JSON(http.StatusOK, users)
+}
+
+// createRequest is the expected JSON body for POST /users.
+type createRequest struct {
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+}
+
+// Create handles POST /users — creates a new user.
+func (h *Handler) Create(c *gin.Context) {
+	var req createRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierr.Abort(c, apierr.BadRequest("invalid JSON body"))
+		return
+	}
+
+	if req.Email == "" {
+		apierr.Abort(c, apierr.BadRequest("email is required"))
+		return
+	}
+	if len(req.Password) < 8 {
+		apierr.Abort(c, apierr.BadRequest("password must be at least 8 characters"))
+		return
+	}
+	if req.Role != string(RoleOperator) && req.Role != string(RoleManager) && req.Role != string(RoleAdmin) {
+		apierr.Abort(c, apierr.BadRequest("role must be one of: operator, manager, admin"))
+		return
+	}
+
+	u, err := h.repo.Create(req.Email, req.Name, req.Password, req.Role)
+	if err != nil {
+		if errors.Is(err, ErrEmailConflict) {
+			apierr.Abort(c, apierr.Conflict("email already in use"))
+			return
+		}
+		logger.Get().Error().Err(err).Msg("user create failed")
+		apierr.Abort(c, apierr.Internal())
+		return
+	}
+	c.JSON(http.StatusCreated, u)
+}
+
+// updateRequest is the expected JSON body for PUT /users/:id.
+type updateRequest struct {
+	Name   string `json:"name"`
+	Role   Role   `json:"role"`
+	Active bool   `json:"active"`
+}
+
+// Update handles PUT /users/:id — updates an existing user.
+func (h *Handler) Update(c *gin.Context) {
+	id := c.Param("id")
+
+	var req updateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apierr.Abort(c, apierr.BadRequest("invalid JSON body"))
+		return
+	}
+	if req.Name == "" {
+		apierr.Abort(c, apierr.BadRequest("name is required"))
+		return
+	}
+	if req.Role != RoleOperator && req.Role != RoleManager && req.Role != RoleAdmin {
+		apierr.Abort(c, apierr.BadRequest("role must be one of: operator, manager, admin"))
+		return
+	}
+
+	u, err := h.repo.Update(id, req.Name, req.Role, req.Active)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			apierr.Abort(c, apierr.NotFound("user not found"))
+			return
+		}
+		logger.Get().Error().Err(err).Str("user_id", id).Msg("user update failed")
+		apierr.Abort(c, apierr.Internal())
+		return
+	}
+	c.JSON(http.StatusOK, u)
+}
+
+// Delete handles DELETE /users/:id — permanently removes a user.
+func (h *Handler) Delete(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := h.repo.Delete(id); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			apierr.Abort(c, apierr.NotFound("user not found"))
+			return
+		}
+		logger.Get().Error().Err(err).Str("user_id", id).Msg("user delete failed")
+		apierr.Abort(c, apierr.Internal())
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
