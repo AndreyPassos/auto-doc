@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS documents;
+DROP TABLE IF EXISTS users;
+DROP TYPE IF EXISTS doc_type;
+DROP TYPE IF EXISTS doc_status;
+DROP TYPE IF EXISTS user_role;
