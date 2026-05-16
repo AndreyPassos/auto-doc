@@ -4,11 +4,11 @@ import { Layout } from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 const Login = lazy(() => import('./pages/Login'))
-const DocumentList = lazy(() => import('./pages/DocumentList'))
-const DocumentUpload = lazy(() => import('./pages/DocumentUpload'))
-const DocumentDetail = lazy(() => import('./pages/DocumentDetail'))
-const ReportsDashboard = lazy(() => import('./pages/ReportsDashboard'))
-const UserManagement = lazy(() => import('./pages/UserManagement'))
+const DocumentList = lazy(() => import('./pages/Documents/DocumentList'))
+const DocumentUpload = lazy(() => import('./pages/Documents/DocumentUpload'))
+const DocumentDetail = lazy(() => import('./pages/Documents/DocumentDetail'))
+const ReportsDashboard = lazy(() => import('./pages/Reports/ReportsDashboard'))
+const UserManagement = lazy(() => import('./pages/Admin/UserManagement'))
 
 function PageFallback() {
   return (

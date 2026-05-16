@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
@@ -9,15 +9,9 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
-  useEffect(() => {
-    if (loginMutation.isSuccess) {
-      navigate('/documents')
-    }
-  }, [loginMutation.isSuccess, navigate])
-
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    loginMutation.mutate({ email, password })
+    loginMutation.mutate({ email, password }, { onSuccess: () => navigate('/documents') })
   }
 
   return (

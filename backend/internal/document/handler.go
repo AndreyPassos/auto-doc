@@ -199,6 +199,21 @@ func (h *Handler) Enrich(c *gin.Context) {
 	c.JSON(http.StatusOK, doc)
 }
 
+// Delete handles DELETE /documents/:id — permanently removes a document (admin only).
+func (h *Handler) Delete(c *gin.Context) {
+	id := c.Param("id")
+	if err := h.svc.Delete(id); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			apierr.Abort(c, apierr.NotFound("document not found"))
+			return
+		}
+		logger.Get().Error().Err(err).Str("doc_id", id).Msg("document delete failed")
+		apierr.Abort(c, apierr.Internal())
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
 // detectFileType inspects magic bytes to identify a supported file type.
 func detectFileType(content []byte) (FileType, error) {
 	if len(content) >= 4 && string(content[:4]) == "%PDF" {

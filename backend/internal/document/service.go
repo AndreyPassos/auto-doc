@@ -107,6 +107,19 @@ func (s *Service) List(filters ListFilters) ([]Document, int, error) {
 	return docs, total, nil
 }
 
+// Delete removes a document record and its stored file from disk.
+func (s *Service) Delete(id string) error {
+	doc, err := s.GetByID(id)
+	if err != nil {
+		return err
+	}
+	_ = os.Remove(doc.StoredPath)
+	if err := s.repo.Delete(id); err != nil {
+		return fmt.Errorf("delete document: %w", err)
+	}
+	return nil
+}
+
 // Enrich parses XML content and persists the enrichment data on a document.
 func (s *Service) Enrich(id string, xmlContent []byte) (*Document, error) {
 	// Verify document exists first.

@@ -1,6 +1,7 @@
 package document
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -77,6 +78,18 @@ func (r *Repository) Enrich(id string, xmlData json.RawMessage) error {
 			updated_at = NOW()
 		WHERE id = $1`, id, xmlData)
 	return err
+}
+
+func (r *Repository) Delete(id string) error {
+	res, err := r.db.Exec(`DELETE FROM documents WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (r *Repository) List(f ListFilters) ([]Document, int, error) {

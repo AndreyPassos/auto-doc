@@ -150,6 +150,7 @@ func main() {
 		docRoutes.GET("", docHandler.List)
 		docRoutes.GET("/:id", docHandler.GetByID)
 		docRoutes.POST("/:id/enrich", docHandler.Enrich)
+		docRoutes.DELETE("/:id", auth.RequireRole("admin"), docHandler.Delete)
 	}
 
 	// Report routes (require auth)
