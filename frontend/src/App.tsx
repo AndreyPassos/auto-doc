@@ -9,6 +9,7 @@ const DocumentUpload = lazy(() => import('./pages/Documents/DocumentUpload'))
 const DocumentDetail = lazy(() => import('./pages/Documents/DocumentDetail'))
 const ReportsDashboard = lazy(() => import('./pages/Reports/ReportsDashboard'))
 const UserManagement = lazy(() => import('./pages/Admin/UserManagement'))
+const AuditLogs = lazy(() => import('./pages/Admin/AuditLogs'))
 
 function PageFallback() {
   return (
@@ -55,6 +56,7 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route element={<Layout />}>
               <Route path="/admin" element={<UserManagement />} />
+              <Route path="/admin/logs" element={<AuditLogs />} />
             </Route>
           </Route>
         </Routes>

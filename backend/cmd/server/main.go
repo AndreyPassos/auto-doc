@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/keltech/auto-doc/internal/auth"
+	"github.com/keltech/auto-doc/internal/auditlog"
 	"github.com/keltech/auto-doc/internal/db"
 	"github.com/keltech/auto-doc/internal/document"
 	"github.com/keltech/auto-doc/internal/report"
@@ -128,13 +129,15 @@ func main() {
 	})
 
 	// Handlers
-	authHandler := auth.NewHandler(database, jwtSecret, jwtExpiry)
+	auditLogger := auditlog.New(database)
+	authHandler := auth.NewHandler(database, jwtSecret, jwtExpiry, auditLogger)
 	docSvc := document.NewService(docRepo, pool, uploadDir)
-	docHandler := document.NewHandler(docSvc)
+	docHandler := document.NewHandler(docSvc, auditLogger)
 	reportSvc := report.NewService(database)
 	reportHandler := report.NewHandler(reportSvc)
 	userRepo := user.NewRepository(database)
-	userHandler := user.NewHandler(userRepo)
+	userHandler := user.NewHandler(userRepo, auditLogger)
+	auditHandler := auditlog.NewHandler(auditLogger)
 
 	// Auth routes
 	authRoutes := router.Group("/api/v1/auth")
@@ -171,6 +174,15 @@ func main() {
 		userRoutes.POST("", userHandler.Create)
 		userRoutes.PUT("/:id", userHandler.Update)
 		userRoutes.DELETE("/:id", userHandler.Delete)
+	}
+
+	// Admin routes (require auth + admin role)
+	adminRoutes := router.Group("/api/v1/admin",
+		auth.RequireAuth(jwtSecret),
+		auth.RequireRole("admin"),
+	)
+	{
+		adminRoutes.GET("/logs", auditHandler.List)
 	}
 
 	// 7. HTTP server with read/write timeouts and graceful shutdown

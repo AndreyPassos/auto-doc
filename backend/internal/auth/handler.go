@@ -10,14 +10,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// AuditLogger is the subset of auditlog.Logger used by this handler,
+// defined here to avoid an import cycle.
+type AuditLogger interface {
+	Log(userID, action, resourceType, resourceID, ip string, details any)
+}
+
 type Handler struct {
 	db        *sqlx.DB
 	jwtSecret string
 	jwtExpiry time.Duration
+	audit     AuditLogger
 }
 
-func NewHandler(db *sqlx.DB, jwtSecret string, jwtExpiry time.Duration) *Handler {
-	return &Handler{db: db, jwtSecret: jwtSecret, jwtExpiry: jwtExpiry}
+func NewHandler(db *sqlx.DB, jwtSecret string, jwtExpiry time.Duration, audit AuditLogger) *Handler {
+	return &Handler{db: db, jwtSecret: jwtSecret, jwtExpiry: jwtExpiry, audit: audit}
 }
 
 type loginRequest struct {
@@ -56,6 +63,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		h.audit.Log("", "auth.login_failed", "", "", c.ClientIP(), map[string]string{"email": req.Email})
 		apierr.Respond(c, apierr.Unauthorized())
 		return
 	}
@@ -65,6 +73,8 @@ func (h *Handler) Login(c *gin.Context) {
 		apierr.Respond(c, apierr.Internal())
 		return
 	}
+
+	h.audit.Log(user.ID, "auth.login", "", "", c.ClientIP(), map[string]string{"email": user.Email})
 
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,

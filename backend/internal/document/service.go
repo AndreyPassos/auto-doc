@@ -129,7 +129,7 @@ func (s *Service) Enrich(id string, xmlContent []byte) (*Document, error) {
 
 	enrichment, err := xmlparser.Parse(xmlContent)
 	if err != nil {
-		return nil, fmt.Errorf("parse xml: %w", err)
+		return nil, apierr.BadRequest(err.Error())
 	}
 
 	raw, err := json.Marshal(enrichment)

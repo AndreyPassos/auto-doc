@@ -5,19 +5,26 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/keltech/auto-doc/internal/auth"
 	"github.com/keltech/auto-doc/pkg/apierr"
 	"github.com/keltech/auto-doc/pkg/logger"
 )
 
+// AuditLogger is the subset of auditlog.Logger used by this handler.
+type AuditLogger interface {
+	Log(userID, action, resourceType, resourceID, ip string, details any)
+}
+
 // Handler exposes user management endpoints over HTTP via Gin.
 // All routes must be protected by admin-only middleware at the router level.
 type Handler struct {
-	repo *Repository
+	repo  *Repository
+	audit AuditLogger
 }
 
 // NewHandler creates a new Handler backed by the given repository.
-func NewHandler(repo *Repository) *Handler {
-	return &Handler{repo: repo}
+func NewHandler(repo *Repository, audit AuditLogger) *Handler {
+	return &Handler{repo: repo, audit: audit}
 }
 
 // List handles GET /users — returns the full list of users.
@@ -73,6 +80,14 @@ func (h *Handler) Create(c *gin.Context) {
 		apierr.Abort(c, apierr.Internal())
 		return
 	}
+
+	if claims := auth.GetClaims(c); claims != nil {
+		h.audit.Log(claims.UserID, "user.create", "user", u.ID, c.ClientIP(), map[string]string{
+			"email": u.Email,
+			"role":  string(u.Role),
+		})
+	}
+
 	c.JSON(http.StatusCreated, u)
 }
 
@@ -111,6 +126,15 @@ func (h *Handler) Update(c *gin.Context) {
 		apierr.Abort(c, apierr.Internal())
 		return
 	}
+
+	if claims := auth.GetClaims(c); claims != nil {
+		h.audit.Log(claims.UserID, "user.update", "user", id, c.ClientIP(), map[string]any{
+			"email":  u.Email,
+			"role":   string(u.Role),
+			"active": u.Active,
+		})
+	}
+
 	c.JSON(http.StatusOK, u)
 }
 
@@ -127,5 +151,10 @@ func (h *Handler) Delete(c *gin.Context) {
 		apierr.Abort(c, apierr.Internal())
 		return
 	}
+
+	if claims := auth.GetClaims(c); claims != nil {
+		h.audit.Log(claims.UserID, "user.delete", "user", id, c.ClientIP(), nil)
+	}
+
 	c.Status(http.StatusNoContent)
 }

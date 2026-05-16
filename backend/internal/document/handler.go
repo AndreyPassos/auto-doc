@@ -13,14 +13,20 @@ import (
 	"github.com/keltech/auto-doc/pkg/logger"
 )
 
+// AuditLogger is the subset of auditlog.Logger used by this handler.
+type AuditLogger interface {
+	Log(userID, action, resourceType, resourceID, ip string, details any)
+}
+
 // Handler exposes the document service over HTTP via Gin.
 type Handler struct {
-	svc *Service
+	svc   *Service
+	audit AuditLogger
 }
 
 // NewHandler creates a new Handler.
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *Service, audit AuditLogger) *Handler {
+	return &Handler{svc: svc, audit: audit}
 }
 
 // Upload handles POST /documents.
@@ -75,6 +81,12 @@ func (h *Handler) Upload(c *gin.Context) {
 		}
 		return
 	}
+
+	h.audit.Log(uid, "document.upload", "document", doc.ID, c.ClientIP(), map[string]any{
+		"filename":  doc.OriginalFilename,
+		"file_type": doc.FileType,
+		"size":      doc.FileSize,
+	})
 
 	c.JSON(http.StatusCreated, doc)
 }
@@ -196,12 +208,24 @@ func (h *Handler) Enrich(c *gin.Context) {
 		return
 	}
 
+	claims := auth.GetClaims(c)
+	uid := ""
+	if claims != nil {
+		uid = claims.UserID
+	}
+	h.audit.Log(uid, "document.enrich", "document", id, c.ClientIP(), map[string]string{
+		"filename": doc.OriginalFilename,
+	})
+
 	c.JSON(http.StatusOK, doc)
 }
 
 // Delete handles DELETE /documents/:id — permanently removes a document (admin only).
 func (h *Handler) Delete(c *gin.Context) {
 	id := c.Param("id")
+
+	doc, _ := h.svc.GetByID(id)
+
 	if err := h.svc.Delete(id); err != nil {
 		if errors.Is(err, ErrNotFound) {
 			apierr.Abort(c, apierr.NotFound("document not found"))
@@ -211,6 +235,20 @@ func (h *Handler) Delete(c *gin.Context) {
 		apierr.Abort(c, apierr.Internal())
 		return
 	}
+
+	claims := auth.GetClaims(c)
+	uid := ""
+	if claims != nil {
+		uid = claims.UserID
+	}
+	filename := id
+	if doc != nil {
+		filename = doc.OriginalFilename
+	}
+	h.audit.Log(uid, "document.delete", "document", id, c.ClientIP(), map[string]string{
+		"filename": filename,
+	})
+
 	c.Status(http.StatusNoContent)
 }
 

@@ -6,6 +6,7 @@ interface NavItem {
   label: string
   roles: ('operator' | 'manager' | 'admin')[]
   icon: React.ReactNode
+  end?: boolean
 }
 
 function IconDocuments() {
@@ -32,10 +33,19 @@ function IconUsers() {
   )
 }
 
+function IconLogs() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+    </svg>
+  )
+}
+
 const navItems: NavItem[] = [
-  { to: '/documents', label: 'Documentos', roles: ['operator', 'manager', 'admin'], icon: <IconDocuments /> },
-  { to: '/reports',   label: 'Relatórios', roles: ['manager', 'admin'],             icon: <IconReports /> },
-  { to: '/admin',     label: 'Usuários',   roles: ['admin'],                        icon: <IconUsers /> },
+  { to: '/documents',  label: 'Documentos', roles: ['operator', 'manager', 'admin'], icon: <IconDocuments /> },
+  { to: '/reports',    label: 'Relatórios', roles: ['manager', 'admin'],             icon: <IconReports /> },
+  { to: '/admin',      label: 'Usuários',   roles: ['admin'],                        icon: <IconUsers />, end: true },
+  { to: '/admin/logs', label: 'Logs',       roles: ['admin'],                        icon: <IconLogs /> },
 ]
 
 const ROLE_LABELS: Record<string, string> = {
@@ -90,6 +100,7 @@ export function Layout() {
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
