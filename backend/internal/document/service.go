@@ -11,7 +11,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/keltech/auto-doc/internal/xmlparser"
+	"github.com/keltech/auto-doc/pkg/apierr"
 )
+
+// ErrNotFound is returned when a document does not exist in the repository.
+var ErrNotFound = errors.New("document not found")
 
 // JobSubmitter abstracts the worker pool so that the document package does not
 // import the worker package (which already imports document — cycle prevention).
@@ -39,7 +43,7 @@ func NewService(repo *Repository, pool JobSubmitter, uploadDir string) *Service 
 // Upload validates, stores and enqueues a document for processing.
 func (s *Service) Upload(userID, originalFilename string, content []byte, fileType FileType) (*Document, error) {
 	if int64(len(content)) > maxFileSize {
-		return nil, fmt.Errorf("file exceeds maximum allowed size of 25 MB")
+		return nil, apierr.BadRequest("file exceeds maximum allowed size of 25 MB")
 	}
 
 	if err := validateMagic(content, fileType); err != nil {
@@ -87,7 +91,7 @@ func (s *Service) GetByID(id string) (*Document, error) {
 	doc, err := s.repo.FindByID(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("document not found: %s", id)
+			return nil, fmt.Errorf("%w: %s", ErrNotFound, id)
 		}
 		return nil, fmt.Errorf("find document: %w", err)
 	}
@@ -132,14 +136,14 @@ func validateMagic(content []byte, fileType FileType) error {
 	switch fileType {
 	case TypePDF:
 		if len(content) < len(magicPDF) || string(content[:len(magicPDF)]) != string(magicPDF) {
-			return fmt.Errorf("invalid PDF file: magic bytes mismatch")
+			return apierr.BadRequest("invalid PDF file: magic bytes mismatch")
 		}
 	case TypePNG:
 		if len(content) < len(magicPNG) || string(content[:len(magicPNG)]) != string(magicPNG) {
-			return fmt.Errorf("invalid PNG file: magic bytes mismatch")
+			return apierr.BadRequest("invalid PNG file: magic bytes mismatch")
 		}
 	default:
-		return fmt.Errorf("unsupported file type: %s", fileType)
+		return apierr.BadRequest(fmt.Sprintf("unsupported file type: %s", fileType))
 	}
 	return nil
 }

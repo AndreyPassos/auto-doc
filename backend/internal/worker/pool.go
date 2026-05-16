@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -93,5 +92,3 @@ func extractText(job Job) (string, error) {
 	}
 }
 
-// keep json import used via document.Patterns serialization
-var _ = json.Marshal

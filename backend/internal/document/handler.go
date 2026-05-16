@@ -1,16 +1,16 @@
 package document
 
 import (
-	"database/sql"
 	"errors"
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/keltech/auto-doc/internal/auth"
 	"github.com/keltech/auto-doc/pkg/apierr"
+	"github.com/keltech/auto-doc/pkg/logger"
 )
 
 // Handler exposes the document service over HTTP via Gin.
@@ -26,16 +26,22 @@ func NewHandler(svc *Service) *Handler {
 // Upload handles POST /documents.
 // Expects a multipart form with a file field named "file".
 func (h *Handler) Upload(c *gin.Context) {
-	userID, _ := c.Get("userID")
-	uid, _ := userID.(string)
-	if uid == "" {
+	claims := auth.GetClaims(c)
+	if claims == nil {
 		apierr.Abort(c, apierr.Unauthorized())
 		return
 	}
+	uid := claims.UserID
 
 	fh, err := c.FormFile("file")
 	if err != nil {
 		apierr.Abort(c, apierr.BadRequest("multipart field 'file' is required"))
+		return
+	}
+
+	const maxUploadSize = 25 * 1024 * 1024
+	if fh.Size > maxUploadSize {
+		apierr.Abort(c, apierr.BadRequest("file exceeds 25 MB limit"))
 		return
 	}
 
@@ -60,7 +66,13 @@ func (h *Handler) Upload(c *gin.Context) {
 
 	doc, err := h.svc.Upload(uid, fh.Filename, content, fileType)
 	if err != nil {
-		apierr.Abort(c, apierr.BadRequest(err.Error()))
+		var apiErr apierr.APIError
+		if errors.As(err, &apiErr) {
+			apierr.Abort(c, apiErr)
+		} else {
+			logger.Get().Error().Err(err).Msg("upload failed")
+			apierr.Abort(c, apierr.Internal())
+		}
 		return
 	}
 
@@ -72,7 +84,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	doc, err := h.svc.GetByID(id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) || isNotFoundErr(err) {
+		if errors.Is(err, ErrNotFound) {
 			apierr.Abort(c, apierr.NotFound("document not found"))
 			return
 		}
@@ -149,6 +161,12 @@ func (h *Handler) Enrich(c *gin.Context) {
 		return
 	}
 
+	const maxXMLSize = 5 * 1024 * 1024
+	if fh.Size > maxXMLSize {
+		apierr.Abort(c, apierr.BadRequest("xml file exceeds 5 MB limit"))
+		return
+	}
+
 	f, err := fh.Open()
 	if err != nil {
 		apierr.Abort(c, apierr.Internal())
@@ -164,11 +182,17 @@ func (h *Handler) Enrich(c *gin.Context) {
 
 	doc, err := h.svc.Enrich(id, xmlContent)
 	if err != nil {
-		if isNotFoundErr(err) {
+		if errors.Is(err, ErrNotFound) {
 			apierr.Abort(c, apierr.NotFound("document not found"))
 			return
 		}
-		apierr.Abort(c, apierr.BadRequest(err.Error()))
+		var apiErr apierr.APIError
+		if errors.As(err, &apiErr) {
+			apierr.Abort(c, apiErr)
+		} else {
+			logger.Get().Error().Err(err).Str("doc_id", id).Msg("enrich failed")
+			apierr.Abort(c, apierr.Internal())
+		}
 		return
 	}
 
@@ -184,15 +208,6 @@ func detectFileType(content []byte) (FileType, error) {
 		return TypePNG, nil
 	}
 	return "", errors.New("unsupported file type: only PDF and PNG are accepted")
-}
-
-// isNotFoundErr checks if the error message indicates a not-found condition.
-// The service wraps sql.ErrNoRows with context strings, so we check both.
-func isNotFoundErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	return errors.Is(err, sql.ErrNoRows) || strings.Contains(err.Error(), "not found")
 }
 
 // parseIntParam reads an integer query parameter with a fallback default.
