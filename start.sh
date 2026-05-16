@@ -19,9 +19,7 @@ PIDS=()
 cleanup() {
   echo ""
   info "Shutting down..."
-  for pid in "${PIDS[@]}"; do
-    kill "$pid" 2>/dev/null || true
-  done
+  [[ ${#PIDS[@]} -gt 0 ]] && kill "${PIDS[@]}" 2>/dev/null || true
   wait 2>/dev/null || true
   ok "Done."
 }
