@@ -8,6 +8,140 @@ import { FileDropzone } from '../../components/FileDropzone'
 
 const xmlAccept = { 'application/xml': ['.xml'], 'text/xml': ['.xml'] }
 
+interface XmlCliente { codigo?: string; nome?: string; cnpj?: string }
+interface XmlPeriodo { inicio?: string; fim?: string }
+interface XmlCampo  { chave?: string; valor?: string }
+interface XmlData {
+  referencia?:    string
+  classificacao?: string
+  cliente?:       XmlCliente
+  periodo?:       XmlPeriodo
+  metadados?:     XmlCampo[]
+}
+
+const CLASSIFICACAO_COLORS: Record<string, string> = {
+  fiscal:   'bg-blue-100 text-blue-700',
+  contabil: 'bg-violet-100 text-violet-700',
+  juridico: 'bg-amber-100 text-amber-700',
+  outro:    'bg-gray-100 text-gray-600',
+}
+
+function normalizeCNPJ(cnpj: string) {
+  return cnpj.replace(/\D/g, '')
+}
+
+// Converts YYYY-MM-DD to dd/mm/yyyy to match OCR-extracted date format
+function isoToBR(iso: string) {
+  const [y, m, d] = iso.split('-')
+  if (!y || !m || !d) return null
+  return `${d}/${m}/${y}`
+}
+
+type MatchStatus = true | false | null
+
+function MatchTag({ label, match }: { label: string; match: MatchStatus }) {
+  if (match === null) return null
+  return match ? (
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+      </svg>
+      {label} confirmado
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
+      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+      </svg>
+      {label} não encontrado no texto
+    </span>
+  )
+}
+
+function EnrichmentView({ data, ocrCNPJs, ocrDates }: { data: XmlData; ocrCNPJs: string[]; ocrDates: string[] }) {
+  const xmlCNPJ = data.cliente?.cnpj ? normalizeCNPJ(data.cliente.cnpj) : null
+  const cnpjMatch: MatchStatus = xmlCNPJ && ocrCNPJs.length > 0
+    ? ocrCNPJs.some(c => normalizeCNPJ(c) === xmlCNPJ)
+    : null
+
+  const checkDate = (iso: string | undefined): MatchStatus => {
+    if (!iso || ocrDates.length === 0) return null
+    const br = isoToBR(iso)
+    return br ? ocrDates.includes(br) : null
+  }
+
+  const inicioMatch = checkDate(data.periodo?.inicio)
+  const fimMatch    = checkDate(data.periodo?.fim)
+
+  return (
+    <div className="space-y-4">
+      {/* Referência + Classificação + Período */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {data.referencia && (
+          <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+            <p className="text-xs font-medium text-gray-400">Referência</p>
+            <p className="mt-0.5 text-sm font-semibold text-gray-800">{data.referencia}</p>
+          </div>
+        )}
+        {data.classificacao && (
+          <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+            <p className="text-xs font-medium text-gray-400">Classificação</p>
+            <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${CLASSIFICACAO_COLORS[data.classificacao] ?? 'bg-gray-100 text-gray-600'}`}>
+              {data.classificacao}
+            </span>
+          </div>
+        )}
+        {data.periodo && (
+          <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+            <p className="text-xs font-medium text-gray-400">Período</p>
+            <p className="mt-0.5 text-sm font-semibold text-gray-800">
+              {data.periodo.inicio} → {data.periodo.fim}
+            </p>
+            <div className="mt-1.5 flex flex-col gap-0.5">
+              <MatchTag label={`Início (${isoToBR(data.periodo.inicio) ?? data.periodo.inicio})`} match={inicioMatch} />
+              <MatchTag label={`Fim (${isoToBR(data.periodo.fim) ?? data.periodo.fim})`} match={fimMatch} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Cliente */}
+      {data.cliente && (
+        <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+          <p className="mb-2 text-xs font-medium text-gray-400">Cliente</p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
+            {data.cliente.nome && (
+              <span className="text-sm font-semibold text-gray-800">{data.cliente.nome}</span>
+            )}
+            {data.cliente.cnpj && (
+              <span className="font-mono text-sm text-gray-600">{data.cliente.cnpj}</span>
+            )}
+            {data.cliente.codigo && (
+              <span className="text-xs text-gray-400">cód. {data.cliente.codigo}</span>
+            )}
+            <MatchTag label="CNPJ" match={cnpjMatch} />
+          </div>
+        </div>
+      )}
+
+      {/* Metadados */}
+      {data.metadados && data.metadados.length > 0 && (
+        <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+          <p className="mb-2 text-xs font-medium text-gray-400">Metadados</p>
+          <div className="divide-y divide-gray-100">
+            {data.metadados.map((m, i) => (
+              <div key={i} className="flex items-center justify-between py-1.5">
+                <span className="text-xs font-medium text-gray-500">{m.chave}</span>
+                <span className="text-sm text-gray-800">{m.valor}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 const PATTERN_SECTIONS = [
   { key: 'cpf'     as const, label: 'CPFs',    color: 'bg-blue-50 border-blue-100 text-blue-800' },
   { key: 'cnpj'    as const, label: 'CNPJs',   color: 'bg-violet-50 border-violet-100 text-violet-800' },
@@ -32,6 +166,7 @@ export default function DocumentDetail() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [enrichError, setEnrichError] = useState<string | null>(null)
+  const [xmlView, setXmlView] = useState<'structured' | 'json'>('structured')
 
   const { data: doc, isLoading, isError, error } = useDocumentPolling(id)
 
@@ -189,22 +324,41 @@ export default function DocumentDetail() {
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700">Enriquecimento XML</h2>
-          {doc.xml_enriched && doc.xml_enriched_at && (
-            <span className="text-xs text-gray-400">{formatDate(doc.xml_enriched_at)}</span>
-          )}
+          <div className="flex items-center gap-3">
+            {doc.xml_enriched && doc.xml_data && (
+              <div className="flex rounded-lg border border-gray-200 p-0.5 text-xs">
+                <button
+                  onClick={() => setXmlView('structured')}
+                  className={`rounded-md px-2.5 py-1 font-medium transition-colors ${xmlView === 'structured' ? 'bg-gray-100 text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  Formatado
+                </button>
+                <button
+                  onClick={() => setXmlView('json')}
+                  className={`rounded-md px-2.5 py-1 font-medium transition-colors ${xmlView === 'json' ? 'bg-gray-100 text-gray-800' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  JSON
+                </button>
+              </div>
+            )}
+            {doc.xml_enriched && doc.xml_enriched_at && (
+              <span className="text-xs text-gray-400">{formatDate(doc.xml_enriched_at)}</span>
+            )}
+          </div>
         </div>
 
         {doc.xml_enriched && doc.xml_data ? (
-          <div>
-            <span className="mb-3 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+          <div className="space-y-3">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
               <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
               </svg>
               Enriquecido com sucesso
             </span>
-            <pre className="mt-3 overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-4 text-xs leading-relaxed text-gray-700">
-              {JSON.stringify(doc.xml_data, null, 2)}
-            </pre>
+            {xmlView === 'structured'
+              ? <EnrichmentView data={doc.xml_data as XmlData} ocrCNPJs={doc.patterns?.cnpj ?? []} ocrDates={doc.patterns?.dates ?? []} />
+              : <pre className="overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-4 text-xs leading-relaxed text-gray-700">{JSON.stringify(doc.xml_data, null, 2)}</pre>
+            }
           </div>
         ) : (
           <div className="space-y-3">

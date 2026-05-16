@@ -115,7 +115,7 @@ export function Layout() {
   const closeSidebar = () => setSidebarOpen(false)
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
@@ -194,7 +194,7 @@ export function Layout() {
           <Brand />
         </header>
 
-        <main className="flex-1 overflow-auto">
+        <main className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-8">
             <Outlet />
           </div>

@@ -50,35 +50,46 @@ func (p *Pool) worker() {
 	defer p.wg.Done()
 	log := logger.Get()
 	for job := range p.jobs {
-		log.Info().Str("doc_id", job.DocumentID).Str("file", filepath.Base(job.FilePath)).Msg("processing started")
-
-		if err := p.repo.UpdateStatus(job.DocumentID, document.StatusProcessing); err != nil {
-			log.Error().Err(err).Str("doc_id", job.DocumentID).Msg("failed to update status to processing")
-			continue
-		}
-
-		text, err := extractText(job)
-		if err != nil {
-			log.Error().Err(err).Str("doc_id", job.DocumentID).Msg("extraction failed")
-			_ = p.repo.UpdateFailed(job.DocumentID, friendlyExtractionError(err))
-			continue
-		}
-
-		patterns := ocr.ExtractPatterns(text)
-		docPatterns := document.Patterns{
-			CPFs:    patterns.CPFs,
-			CNPJs:   patterns.CNPJs,
-			Dates:   patterns.Dates,
-			Amounts: patterns.Amounts,
-		}
-
-		if err := p.repo.UpdateProcessed(job.DocumentID, text, docPatterns); err != nil {
-			log.Error().Err(err).Str("doc_id", job.DocumentID).Msg("failed to save results")
-			_ = p.repo.UpdateFailed(job.DocumentID, "Erro ao salvar os resultados. Tente enviar o arquivo novamente.")
-			continue
-		}
-
+		p.processJob(job)
 		log.Info().Str("doc_id", job.DocumentID).Msg("processing completed")
+	}
+}
+
+func (p *Pool) processJob(job Job) {
+	log := logger.Get()
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error().Interface("panic", r).Str("doc_id", job.DocumentID).Msg("worker panic recovered")
+			_ = p.repo.UpdateFailed(job.DocumentID, "Falha inesperada durante o processamento. Tente enviar o arquivo novamente.")
+		}
+	}()
+
+	log.Info().Str("doc_id", job.DocumentID).Str("file", filepath.Base(job.FilePath)).Msg("processing started")
+
+	if err := p.repo.UpdateStatus(job.DocumentID, document.StatusProcessing); err != nil {
+		log.Error().Err(err).Str("doc_id", job.DocumentID).Msg("failed to update status to processing")
+		return
+	}
+
+	text, err := extractText(job)
+	if err != nil {
+		log.Error().Err(err).Str("doc_id", job.DocumentID).Msg("extraction failed")
+		_ = p.repo.UpdateFailed(job.DocumentID, friendlyExtractionError(err))
+		return
+	}
+
+	patterns := ocr.ExtractPatterns(text)
+	docPatterns := document.Patterns{
+		CPFs:    patterns.CPFs,
+		CNPJs:   patterns.CNPJs,
+		Dates:   patterns.Dates,
+		Amounts: patterns.Amounts,
+	}
+
+	if err := p.repo.UpdateProcessed(job.DocumentID, text, docPatterns); err != nil {
+		log.Error().Err(err).Str("doc_id", job.DocumentID).Msg("failed to save results")
+		_ = p.repo.UpdateFailed(job.DocumentID, "Erro ao salvar os resultados. Tente enviar o arquivo novamente.")
 	}
 }
 

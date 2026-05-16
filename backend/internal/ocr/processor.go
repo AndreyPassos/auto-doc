@@ -1,12 +1,16 @@
 package ocr
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 )
+
+const ocrTimeout = 60 * time.Second
 
 var (
 	reCPF    = regexp.MustCompile(`\d{3}\.\d{3}\.\d{3}-\d{2}`)
@@ -23,7 +27,9 @@ type Patterns struct {
 }
 
 func ProcessPDF(filePath string) (string, error) {
-	out, err := exec.Command("pdftotext", "-layout", filePath, "-").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), ocrTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "pdftotext", "-layout", filePath, "-").Output()
 	if err != nil {
 		return "", fmt.Errorf("pdftotext: %w", err)
 	}
@@ -31,10 +37,13 @@ func ProcessPDF(filePath string) (string, error) {
 }
 
 func ProcessImage(filePath string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), ocrTimeout)
+	defer cancel()
+
 	tmpOut := filePath + ".ocr"
 	defer os.Remove(tmpOut + ".txt")
 
-	cmd := exec.Command("tesseract", filePath, tmpOut, "-l", "por", "--psm", "3")
+	cmd := exec.CommandContext(ctx, "tesseract", filePath, tmpOut, "-l", "por", "--psm", "3")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return "", fmt.Errorf("tesseract: %w — %s", err, string(out))
 	}
