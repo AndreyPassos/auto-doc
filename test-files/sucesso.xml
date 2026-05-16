@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<documento>
+  <referencia>NF-2026-001</referencia>
+  <cliente>
+    <codigo>CLI-001</codigo>
+    <nome>Empresa Teste Ltda</nome>
+    <cnpj>12.345.678/0001-90</cnpj>
+  </cliente>
+  <classificacao>fiscal</classificacao>
+  <periodo>
+    <inicio>2026-01-01</inicio>
+    <fim>2026-05-16</fim>
+  </periodo>
+  <metadados>
+    <campo chave="numero_nota">NF-1234</campo>
+    <campo chave="valor_total">15000.00</campo>
+    <campo chave="impostos">2250.00</campo>
+  </metadados>
+</documento>

@@ -41,13 +41,13 @@ func (h *Handler) Upload(c *gin.Context) {
 
 	fh, err := c.FormFile("file")
 	if err != nil {
-		apierr.Abort(c, apierr.BadRequest("multipart field 'file' is required"))
+		apierr.Abort(c, apierr.BadRequest("Nenhum arquivo enviado. Selecione um arquivo PDF ou PNG."))
 		return
 	}
 
 	const maxUploadSize = 25 * 1024 * 1024
 	if fh.Size > maxUploadSize {
-		apierr.Abort(c, apierr.BadRequest("file exceeds 25 MB limit"))
+		apierr.Abort(c, apierr.BadRequest("O arquivo excede o limite de 25 MB."))
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 	doc, err := h.svc.GetByID(id)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			apierr.Abort(c, apierr.NotFound("document not found"))
+			apierr.Abort(c, apierr.NotFound("Documento não encontrado."))
 			return
 		}
 		apierr.Abort(c, apierr.Internal())
@@ -169,13 +169,13 @@ func (h *Handler) Enrich(c *gin.Context) {
 
 	fh, err := c.FormFile("xml")
 	if err != nil {
-		apierr.Abort(c, apierr.BadRequest("multipart field 'xml' is required"))
+		apierr.Abort(c, apierr.BadRequest("Nenhum arquivo XML enviado."))
 		return
 	}
 
 	const maxXMLSize = 5 * 1024 * 1024
 	if fh.Size > maxXMLSize {
-		apierr.Abort(c, apierr.BadRequest("xml file exceeds 5 MB limit"))
+		apierr.Abort(c, apierr.BadRequest("O arquivo XML excede o limite de 5 MB."))
 		return
 	}
 
@@ -195,7 +195,7 @@ func (h *Handler) Enrich(c *gin.Context) {
 	doc, err := h.svc.Enrich(id, xmlContent)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			apierr.Abort(c, apierr.NotFound("document not found"))
+			apierr.Abort(c, apierr.NotFound("Documento não encontrado."))
 			return
 		}
 		var apiErr apierr.APIError
@@ -260,7 +260,7 @@ func detectFileType(content []byte) (FileType, error) {
 	if len(content) >= 4 && string(content[:4]) == "\x89PNG" {
 		return TypePNG, nil
 	}
-	return "", errors.New("unsupported file type: only PDF and PNG are accepted")
+	return "", errors.New("Tipo de arquivo não suportado. Envie um PDF ou PNG.")
 }
 
 // parseIntParam reads an integer query parameter with a fallback default.

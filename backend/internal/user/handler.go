@@ -58,22 +58,22 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	if req.Email == "" {
-		apierr.Abort(c, apierr.BadRequest("email is required"))
+		apierr.Abort(c, apierr.BadRequest("O e-mail é obrigatório."))
 		return
 	}
 	if len(req.Password) < 8 {
-		apierr.Abort(c, apierr.BadRequest("password must be at least 8 characters"))
+		apierr.Abort(c, apierr.BadRequest("A senha deve ter pelo menos 8 caracteres."))
 		return
 	}
 	if req.Role != string(RoleOperator) && req.Role != string(RoleManager) && req.Role != string(RoleAdmin) {
-		apierr.Abort(c, apierr.BadRequest("role must be one of: operator, manager, admin"))
+		apierr.Abort(c, apierr.BadRequest("Perfil inválido. Use: operator, manager ou admin."))
 		return
 	}
 
 	u, err := h.repo.Create(req.Email, req.Name, req.Password, req.Role)
 	if err != nil {
 		if errors.Is(err, ErrEmailConflict) {
-			apierr.Abort(c, apierr.Conflict("email already in use"))
+			apierr.Abort(c, apierr.Conflict("E-mail já está em uso."))
 			return
 		}
 		logger.Get().Error().Err(err).Msg("user create failed")
@@ -108,18 +108,18 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 	if req.Name == "" {
-		apierr.Abort(c, apierr.BadRequest("name is required"))
+		apierr.Abort(c, apierr.BadRequest("O nome é obrigatório."))
 		return
 	}
 	if req.Role != RoleOperator && req.Role != RoleManager && req.Role != RoleAdmin {
-		apierr.Abort(c, apierr.BadRequest("role must be one of: operator, manager, admin"))
+		apierr.Abort(c, apierr.BadRequest("Perfil inválido. Use: operator, manager ou admin."))
 		return
 	}
 
 	u, err := h.repo.Update(id, req.Name, req.Role, req.Active)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			apierr.Abort(c, apierr.NotFound("user not found"))
+			apierr.Abort(c, apierr.NotFound("Usuário não encontrado."))
 			return
 		}
 		logger.Get().Error().Err(err).Str("user_id", id).Msg("user update failed")
@@ -144,7 +144,7 @@ func (h *Handler) Delete(c *gin.Context) {
 
 	if err := h.repo.Delete(id); err != nil {
 		if errors.Is(err, ErrNotFound) {
-			apierr.Abort(c, apierr.NotFound("user not found"))
+			apierr.Abort(c, apierr.NotFound("Usuário não encontrado."))
 			return
 		}
 		logger.Get().Error().Err(err).Str("user_id", id).Msg("user delete failed")

@@ -46,6 +46,7 @@ export default function UserManagement() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editState, setEditState] = useState<EditState | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [tableError, setTableError] = useState<string | null>(null)
 
   const { data: users, isLoading, isError, error } = useQuery({
     queryKey: ['users'],
@@ -61,12 +62,14 @@ export default function UserManagement() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: EditState }) => updateUser(id, data),
-    onSuccess: () => { invalidate(); setEditingId(null); setEditState(null) },
+    onSuccess: () => { invalidate(); setEditingId(null); setEditState(null); setTableError(null) },
+    onError: (err) => setTableError(err instanceof Error ? err.message : 'Erro ao salvar alterações.'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteUser(id),
-    onSuccess: () => { invalidate(); setConfirmDeleteId(null) },
+    onSuccess: () => { invalidate(); setConfirmDeleteId(null); setTableError(null) },
+    onError: (err) => { setTableError(err instanceof Error ? err.message : 'Erro ao excluir usuário.'); setConfirmDeleteId(null) },
   })
 
   const startEdit = (user: User) => {
@@ -153,6 +156,14 @@ export default function UserManagement() {
             </div>
           </form>
         </Modal>
+      )}
+
+      {/* Table-level error (update / delete) */}
+      {tableError && (
+        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{tableError}</span>
+          <button onClick={() => setTableError(null)} className="ml-4 text-red-400 hover:text-red-600">✕</button>
+        </div>
       )}
 
       {/* Table */}

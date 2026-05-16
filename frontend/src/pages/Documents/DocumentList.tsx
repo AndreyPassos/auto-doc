@@ -69,10 +69,17 @@ export default function DocumentList() {
     queryFn: () => listDocuments(params),
   })
 
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteDocument(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] })
+      setConfirmDeleteId(null)
+      setDeleteError(null)
+    },
+    onError: (err) => {
+      setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir o documento.')
       setConfirmDeleteId(null)
     },
   })
@@ -104,6 +111,14 @@ export default function DocumentList() {
           </button>
         )}
       </div>
+
+      {/* Delete error */}
+      {deleteError && (
+        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{deleteError}</span>
+          <button onClick={() => setDeleteError(null)} className="ml-4 text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Erro: <classificacao> com valor fora dos aceitos (fiscal|contabil|juridico|outro) -->
+<documento>
+  <referencia>NF-2026-003</referencia>
+  <cliente>
+    <codigo>CLI-003</codigo>
+    <nome>Empresa Classificacao Errada Ltda</nome>
+    <cnpj>11.222.333/0001-44</cnpj>
+  </cliente>
+  <classificacao>financeiro</classificacao>
+  <periodo>
+    <inicio>2026-01-01</inicio>
+    <fim>2026-05-16</fim>
+  </periodo>
+</documento>

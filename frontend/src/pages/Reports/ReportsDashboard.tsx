@@ -50,6 +50,7 @@ export default function ReportsDashboard() {
   const [to, setTo] = useState(today)
   const [docPage, setDocPage] = useState(1)
   const [isExporting, setIsExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   const dateParams = { from: from || undefined, to: to || undefined }
 
@@ -65,6 +66,7 @@ export default function ReportsDashboard() {
 
   const handleExport = async () => {
     setIsExporting(true)
+    setExportError(null)
     try {
       const blob = await exportReport({ ...dateParams, format: 'csv' })
       const url = URL.createObjectURL(blob)
@@ -73,6 +75,8 @@ export default function ReportsDashboard() {
       a.download = `relatorio-${from ?? 'all'}-${to ?? 'all'}.csv`
       a.click()
       URL.revokeObjectURL(url)
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Erro ao exportar o relatório.')
     } finally {
       setIsExporting(false)
     }
@@ -97,6 +101,14 @@ export default function ReportsDashboard() {
           {isExporting ? 'Exportando…' : 'Exportar CSV'}
         </button>
       </div>
+
+      {/* Export error */}
+      {exportError && (
+        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{exportError}</span>
+          <button onClick={() => setExportError(null)} className="ml-4 text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
 
       {/* Date filter */}
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">

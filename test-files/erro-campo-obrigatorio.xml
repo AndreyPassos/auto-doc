@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Erro: campo <referencia> ausente (obrigatorio pelo schema) -->
+<documento>
+  <cliente>
+    <codigo>CLI-002</codigo>
+    <nome>Empresa Sem Referencia SA</nome>
+    <cnpj>98.765.432/0001-10</cnpj>
+  </cliente>
+  <classificacao>contabil</classificacao>
+  <periodo>
+    <inicio>2026-01-01</inicio>
+    <fim>2026-05-16</fim>
+  </periodo>
+</documento>

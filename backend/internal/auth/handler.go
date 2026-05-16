@@ -54,17 +54,19 @@ func (h *Handler) Login(c *gin.Context) {
 		Password string `db:"password"`
 		Active   bool   `db:"active"`
 	}
+	errCredentials := apierr.APIError{Code: 401, Message: "E-mail ou senha incorretos"}
+
 	if err := h.db.Get(&user, `SELECT id, email, name, role, password, active FROM users WHERE email = $1`, req.Email); err != nil {
-		apierr.Respond(c, apierr.Unauthorized())
+		apierr.Respond(c, errCredentials)
 		return
 	}
 	if !user.Active {
-		apierr.Respond(c, apierr.Unauthorized())
+		apierr.Respond(c, apierr.APIError{Code: 401, Message: "Usuário inativo. Contate o administrador."})
 		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		h.audit.Log("", "auth.login_failed", "", "", c.ClientIP(), map[string]string{"email": req.Email})
-		apierr.Respond(c, apierr.Unauthorized())
+		apierr.Respond(c, errCredentials)
 		return
 	}
 

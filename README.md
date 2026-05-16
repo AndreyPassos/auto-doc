@@ -130,4 +130,5 @@ O frontend em modo dev usa proxy para `http://localhost:8080` (configurado no `v
 - [`docs/adrs/004-no-message-broker.md`](docs/adrs/004-no-message-broker.md) — Worker pool em vez de RabbitMQ
 - [`docs/adrs/005-xml-schema.md`](docs/adrs/005-xml-schema.md) — Schema XML para enriquecimento
 - [`docs/xml-schema.md`](docs/xml-schema.md) — Referência completa do schema XML
+- [`docs/ocr-patterns.md`](docs/ocr-patterns.md) — Padrões reconhecidos pelo processamento OCR (CPF, CNPJ, datas, valores)
 - [`CHALLENGES.md`](CHALLENGES.md) — Dificuldades, decisões alternativas e débitos técnicos

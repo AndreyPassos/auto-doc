@@ -16,13 +16,15 @@ type SummaryReport struct {
 	Total    int            `json:"total"`
 	ByStatus map[string]int `json:"by_status"`
 	ByType   map[string]int `json:"by_type"`
-	ByDay    []DayCount     `json:"by_day"`
+	ByDay    []PeriodCount  `json:"by_day"`
+	ByWeek   []PeriodCount  `json:"by_week"`
+	ByMonth  []PeriodCount  `json:"by_month"`
 }
 
-// DayCount holds the document count for a single day.
-type DayCount struct {
-	Date  string `json:"date" db:"day"`
-	Count int    `json:"count" db:"count"`
+// PeriodCount holds the document count for a single time period (day, week, or month).
+type PeriodCount struct {
+	Period string `json:"period" db:"period"`
+	Count  int    `json:"count" db:"count"`
 }
 
 // DocumentRow is a slimmed-down projection used in report listings.
@@ -123,20 +125,52 @@ func (s *Service) Summary(from, to *time.Time) (*SummaryReport, error) {
 		byType[r.Key] = r.Value
 	}
 
-	// --- by_day (same window as above) ---
+	// --- by_day ---
 	byDayQuery := fmt.Sprintf(`
-		SELECT TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day,
+		SELECT TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS period,
 		       COUNT(*) AS count
 		FROM documents %s
-		GROUP BY day
-		ORDER BY day ASC`, baseWhere)
+		GROUP BY period
+		ORDER BY period ASC`, baseWhere)
 
-	var byDay []DayCount
+	var byDay []PeriodCount
 	if err := s.db.Select(&byDay, byDayQuery, filterArgs...); err != nil {
 		return nil, fmt.Errorf("summary by_day: %w", err)
 	}
 	if byDay == nil {
-		byDay = []DayCount{}
+		byDay = []PeriodCount{}
+	}
+
+	// --- by_week (ISO year + week number, e.g. "2024-W03") ---
+	byWeekQuery := fmt.Sprintf(`
+		SELECT TO_CHAR(DATE_TRUNC('week', created_at AT TIME ZONE 'UTC'), 'IYYY-"W"IW') AS period,
+		       COUNT(*) AS count
+		FROM documents %s
+		GROUP BY period
+		ORDER BY period ASC`, baseWhere)
+
+	var byWeek []PeriodCount
+	if err := s.db.Select(&byWeek, byWeekQuery, filterArgs...); err != nil {
+		return nil, fmt.Errorf("summary by_week: %w", err)
+	}
+	if byWeek == nil {
+		byWeek = []PeriodCount{}
+	}
+
+	// --- by_month (e.g. "2024-01") ---
+	byMonthQuery := fmt.Sprintf(`
+		SELECT TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM') AS period,
+		       COUNT(*) AS count
+		FROM documents %s
+		GROUP BY period
+		ORDER BY period ASC`, baseWhere)
+
+	var byMonth []PeriodCount
+	if err := s.db.Select(&byMonth, byMonthQuery, filterArgs...); err != nil {
+		return nil, fmt.Errorf("summary by_month: %w", err)
+	}
+	if byMonth == nil {
+		byMonth = []PeriodCount{}
 	}
 
 	return &SummaryReport{
@@ -144,6 +178,8 @@ func (s *Service) Summary(from, to *time.Time) (*SummaryReport, error) {
 		ByStatus: byStatus,
 		ByType:   byType,
 		ByDay:    byDay,
+		ByWeek:   byWeek,
+		ByMonth:  byMonth,
 	}, nil
 }
 

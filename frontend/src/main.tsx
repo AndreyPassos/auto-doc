@@ -8,7 +8,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 30_000,
+      staleTime: 0,              // data always stale → background refetch on every navigation
+      refetchOnMount: true,      // refetch when component mounts
+      refetchOnWindowFocus: true, // refetch when tab regains focus
+      refetchOnReconnect: true,  // refetch when network reconnects
     },
   },
 })

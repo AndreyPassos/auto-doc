@@ -149,14 +149,14 @@ func validateMagic(content []byte, fileType FileType) error {
 	switch fileType {
 	case TypePDF:
 		if len(content) < len(magicPDF) || string(content[:len(magicPDF)]) != string(magicPDF) {
-			return apierr.BadRequest("invalid PDF file: magic bytes mismatch")
+			return apierr.BadRequest("Arquivo inválido: o conteúdo não corresponde a um PDF.")
 		}
 	case TypePNG:
 		if len(content) < len(magicPNG) || string(content[:len(magicPNG)]) != string(magicPNG) {
-			return apierr.BadRequest("invalid PNG file: magic bytes mismatch")
+			return apierr.BadRequest("Arquivo inválido: o conteúdo não corresponde a um PNG.")
 		}
 	default:
-		return apierr.BadRequest(fmt.Sprintf("unsupported file type: %s", fileType))
+		return apierr.BadRequest(fmt.Sprintf("Tipo de arquivo não suportado: %s", fileType))
 	}
 	return nil
 }
